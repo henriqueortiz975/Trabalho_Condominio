@@ -1,103 +1,324 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CondoManager</title>
+    <title>Aura Residence</title>
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
 <body>
-    <header>
-        <h1>CondoManager</h1>
-        <p>Sistema de cadastro de condomínio</p>
-    </header>
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">A</div>
+            <div>
+                <h2>Aura Residence</h2>
+            </div>
+        </div>
 
-    <nav>
-        <button data-pagina="inicio" class="ativo">Início</button>
-        <button data-pagina="condominios">Condomínios</button>
-        <button data-pagina="unidades">Unidades</button>
-        <button data-pagina="moradores">Moradores</button>
-    </nav>
+        <p class="menu-titulo">MENU PRINCIPAL</p>
 
-    <main>
-        <section id="inicio" class="pagina ativa">
-            <h2>Painel inicial</h2>
-            <p>Resumo dos registros cadastrados.</p>
+        <nav class="menu">
+            <button class="nav-btn ativo" data-pagina="inicio"> Relatório </button>
+            <button class="nav-btn" data-pagina="condominios">Condomínios</button>
+            <button class="nav-btn" data-pagina="unidades">Unidades</button>
+            <button class="nav-btn" data-pagina="moradores">Moradores</button>
+        </nav>
+    </aside>
 
-            <div class="resumo">
-                <article><h3>Condomínios</h3><strong id="totalCondominios">0</strong></article>
-                <article><h3>Unidades</h3><strong id="totalUnidades">0</strong></article>
-                <article><h3>Moradores</h3><strong id="totalMoradores">0</strong></article>
+    <main class="conteudo">
+        <header class="topbar">
+            <div class="topbar-titulo">
+                <button id="menuMobile" class="menu-mobile"
+                    aria-label="Abrir menu">☰</button>
+                <div>
+                    <h1 id="tituloPagina">Relatório</h1>
+                </div>
             </div>
 
-            <h3>Condomínios cadastrados</h3>
-            <div id="listaCondominios" class="lista">Nenhum condomínio cadastrado.</div>
-        </section>
+            <div class="topbar-acoes">
+                <button class="botao-primario" id="atalhoCondominio">
+                    + Novo condomínio
+                </button>
+            </div>
+        </header>
 
-        <section id="condominios" class="pagina">
-            <h2>Cadastrar condomínio</h2>
-            <form id="formCondominio">
-                <label>Nome do condomínio *<input id="nome" required></label>
-                <label>CNPJ<input id="cnpj"></label>
-                <label>Telefone<input id="telefone"></label>
-                <label>Endereço *<input id="endereco" required></label>
-                <label>Bairro<input id="bairro"></label>
-                <label>Cidade<input id="cidade"></label>
-                <label>Estado<input id="estado" maxlength="2" placeholder="RS"></label>
-                <label>Quantidade de blocos<input id="blocos" type="number" min="0" value="0"></label>
-                <label>Quantidade de unidades<input id="quantidadeUnidades" type="number" min="0" value="0"></label>
-                <label>Síndico(a)<input id="sindico"></label>
-                <button type="submit">Salvar condomínio</button>
-            </form>
-        </section>
+        <div class="area-paginas">
+            <section id="inicio" class="pagina ativa">
+                <div class="boas-vindas">
+                    <div>
+                        <h2>Visão geral</h2>
+                        <p>Acompanhe os registros do seu sistema.</p>
+                    </div>
+                    <span class="indicador">● Dados atualizados</span>
+                </div>
 
-        <section id="unidades" class="pagina">
-            <h2>Cadastrar unidade</h2>
-            <form id="formUnidade">
-                <label>Condomínio *
-                    <select id="condominioUnidade" required>
-                        <option value="">Selecione</option>
-                    </select>
-                </label>
-                <label>Bloco<input id="blocoUnidade"></label>
-                <label>Número da unidade *<input id="numeroUnidade" required></label>
-                <label>Tipo
-                    <select id="tipoUnidade">
-                        <option>Apartamento</option><option>Casa</option><option>Sala</option><option>Loja</option>
-                    </select>
-                </label>
-                <label>Proprietário<input id="proprietario"></label>
-                <button type="submit">Salvar unidade</button>
-            </form>
-            <h3>Unidades cadastradas</h3>
-            <div id="listaUnidades" class="lista">Nenhuma unidade cadastrada.</div>
-        </section>
+                <div class="resumo">
+                    <article class="card-resumo">
+                        <div class="card-topo">
+                            <span>Condomínios</span>
+                            <span class="icone-card azul">▤</span>
+                        </div>
+                        <strong id="totalCondominios">0</strong>
+                        <small>Condomínios cadastrados</small>
+                    </article>
 
-        <section id="moradores" class="pagina">
-            <h2>Cadastrar morador</h2>
-            <form id="formMorador">
-                <label>Nome completo *<input id="nomeMorador" required></label>
-                <label>Unidade
-                    <select id="unidadeMorador">
-                        <option value="">Sem unidade vinculada</option>
-                    </select>
-                </label>
-                <label>CPF<input id="cpfMorador"></label>
-                <label>Telefone<input id="telefoneMorador"></label>
-                <label>Perfil
-                    <select id="perfilMorador">
-                        <option>Morador</option><option>Proprietário</option><option>Inquilino</option><option>Dependente</option>
-                    </select>
-                </label>
-                <button type="submit">Salvar morador</button>
-            </form>
-            <h3>Moradores cadastrados</h3>
-            <div id="listaMoradores" class="lista">Nenhum morador cadastrado.</div>
-        </section>
+                    <article class="card-resumo">
+                        <div class="card-topo">
+                            <span>Unidades</span>
+                            <span class="icone-card verde">⌂</span>
+                        </div>
+                        <strong id="totalUnidades">0</strong>
+                        <small>Unidades registradas</small>
+                    </article>
+
+                    <article class="card-resumo">
+                        <div class="card-topo">
+                            <span>Moradores</span>
+                            <span class="icone-card roxo">♙</span>
+                        </div>
+                        <strong id="totalMoradores">0</strong>
+                        <small>Moradores cadastrados</small>
+                    </article>
+                </div>
+
+                <div class="atalhos">
+                    <button data-ir="condominios" class="atalho-card">
+                        <span class="atalho-icone">＋</span>
+                        <span><strong>Cadastrar condomínio</strong>
+                        <small>Adicionar um condomínio</small></span>
+                        <span class="seta">›</span>
+                    </button>
+
+                    <button data-ir="unidades" class="atalho-card">
+                        <span class="atalho-icone verde">＋</span>
+                        <span><strong>Cadastrar unidade</strong>
+                        <small>Vincular unidade a um condomínio</small></span>
+                        <span class="seta">›</span>
+                    </button>
+
+                    <button data-ir="moradores" class="atalho-card">
+                        <span class="atalho-icone roxo">＋</span>
+                        <span><strong>Cadastrar morador</strong>
+                        <small>Adicionar um novo morador</small></span>
+                        <span class="seta">›</span>
+                    </button>
+                </div>
+
+                <section class="painel">
+                    <div class="painel-cabecalho">
+                        <div>
+                            <h3>Condomínios cadastrados</h3>
+                            <p>Resumo dos condomínios registrados.</p>
+                        </div>
+                        <button class="botao-secundario"
+                            data-ir="condominios">Ver todos</button>
+                    </div>
+
+                    <div class="tabela-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Condomínio</th>
+                                    <th>Cidade</th>
+                                    <th>Blocos</th>
+                                    <th>Unidades previstas</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaCondominios">
+                                <tr><td colspan="5" class="vazio">
+                                    Nenhum condomínio cadastrado.
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <!-- CONDOMÍNIOS -->
+            <section id="condominios" class="pagina">
+                <div class="cabecalho-pagina">
+                    <div>
+                        <h2>Condomínios</h2>
+                        <p>Cadastre e consulte os condomínios.</p>
+                    </div>
+                </div>
+
+                <section class="painel">
+                    <h3 id="tituloFormCondominio">Novo condomínio</h3>
+
+                    <form id="formCondominio" class="form-grid">
+                        <label>Nome do condomínio *
+                            <input id="nome" required placeholder="Ex.: Residencial Jardim">
+                        </label>
+                        <label>CNPJ
+                            <input id="cnpj" placeholder="CNPJ do condomínio">
+                        </label>
+                        <label>Telefone
+                            <input id="telefone" placeholder="Telefone para contato">
+                        </label>
+                        <label>Endereço *
+                            <input id="endereco" required placeholder="Rua e número">
+                        </label>
+                        <label>Bairro
+                            <input id="bairro">
+                        </label>
+                        <label>Cidade
+                            <input id="cidade">
+                        </label>
+                        <label>Estado
+                            <input id="estado" maxlength="2" placeholder="RS">
+                        </label>
+                        <label>Quantidade de blocos
+                            <input id="blocos" type="number" min="0" value="0">
+                        </label>
+                        <label>Quantidade de unidades
+                            <input id="quantidadeUnidades" type="number" min="0" value="0">
+                        </label>
+                        <label>Síndico(a)
+                            <input id="sindico">
+                        </label>
+
+                        <div class="form-acoes">
+                            <button type="reset" class="botao-secundario">Limpar</button>
+                            <button type="submit" class="botao-primario">
+                                Salvar condomínio
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="painel">
+                    <div class="painel-cabecalho">
+                        <div>
+                            <h3>Todos os condomínios</h3>
+                            <p id="contagemCondominios">0 registros</p>
+                        </div>
+                        <input class="pesquisa" id="pesquisaCondominio"
+                            placeholder="Pesquisar condomínio...">
+                    </div>
+                    <div class="lista-registros" id="registrosCondominios"></div>
+                </section>
+            </section>
+
+            <!-- UNIDADES -->
+            <section id="unidades" class="pagina">
+                <div class="cabecalho-pagina">
+                    <div>
+                        <h2>Unidades</h2>
+                        <p>Gerencie apartamentos, casas, salas e lojas.</p>
+                    </div>
+                </div>
+
+                <section class="painel">
+                    <h3 id="tituloFormUnidade">Nova unidade</h3>
+                    <form id="formUnidade" class="form-grid">
+                        <label>Condomínio *
+                            <select id="condominioUnidade" required>
+                                <option value="">Selecione um condomínio</option>
+                            </select>
+                        </label>
+                        <label>Bloco
+                            <input id="blocoUnidade" placeholder="Ex.: Bloco A">
+                        </label>
+                        <label>Número da unidade *
+                            <input id="numeroUnidade" required placeholder="Ex.: 101">
+                        </label>
+                        <label>Tipo de unidade
+                            <select id="tipoUnidade">
+                                <option>Apartamento</option>
+                                <option>Casa</option>
+                                <option>Sala</option>
+                                <option>Loja</option>
+                            </select>
+                        </label>
+                        <label>Proprietário
+                            <input id="proprietario">
+                        </label>
+                        <div class="form-acoes">
+                            <button type="reset" class="botao-secundario">Limpar</button>
+                            <button type="submit" class="botao-primario">
+                                Salvar unidade
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="painel">
+                    <div class="painel-cabecalho">
+                        <div>
+                            <h3>Unidades cadastradas</h3>
+                            <p id="contagemUnidades">0 registros</p>
+                        </div>
+                        <input class="pesquisa" id="pesquisaUnidade"
+                            placeholder="Pesquisar unidade...">
+                    </div>
+                    <div class="lista-registros" id="listaUnidades"></div>
+                </section>
+            </section>
+
+            <!-- MORADORES -->
+            <section id="moradores" class="pagina">
+                <div class="cabecalho-pagina">
+                    <div>
+                        <h2>Moradores</h2>
+                        <p>Cadastre e consulte os moradores das unidades.</p>
+                    </div>
+                </div>
+
+                <section class="painel">
+                    <h3 id="tituloFormMorador">Novo morador</h3>
+                    <form id="formMorador" class="form-grid">
+                        <label>Nome completo *
+                            <input id="nomeMorador" required placeholder="Nome do morador">
+                        </label>
+                        <label>Unidade
+                            <select id="unidadeMorador">
+                                <option value="">Sem unidade vinculada</option>
+                            </select>
+                        </label>
+                        <label>CPF
+                            <input id="cpfMorador" placeholder="CPF do morador">
+                        </label>
+                        <label>Telefone
+                            <input id="telefoneMorador" placeholder="Telefone para contato">
+                        </label>
+                        <label>Perfil
+                            <select id="perfilMorador">
+                                <option>Morador</option>
+                                <option>Proprietário</option>
+                                <option>Inquilino</option>
+                                <option>Dependente</option>
+                            </select>
+                        </label>
+                        <div class="form-acoes">
+                            <button type="reset" class="botao-secundario">Limpar</button>
+                            <button type="submit" class="botao-primario">
+                                Salvar morador
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="painel">
+                    <div class="painel-cabecalho">
+                        <div>
+                            <h3>Moradores cadastrados</h3>
+                            <p id="contagemMoradores">0 registros</p>
+                        </div>
+                        <input class="pesquisa" id="pesquisaMorador"
+                            placeholder="Pesquisar morador...">
+                    </div>
+                    <div class="lista-registros" id="listaMoradores"></div>
+                </section>
+            </section>
+        </div>
+
+        <footer>© 2026 CondoManager · Sistema de gestão condominial</footer>
     </main>
 
-    <footer>CondoManager · Sistema de cadastro</footer>
     <div id="mensagem" role="status" aria-live="polite"></div>
 </body>
 </html>

@@ -1,288 +1,347 @@
-/* =====================================
-   1. ELEMENTOS E MENSAGENS
-===================================== */
 
-const mensagem = document.getElementById("mensagem");
+let condominios = JSON.parse(localStorage.getItem("condominios")) || [];
+let unidades = JSON.parse(localStorage.getItem("unidades")) || [];
+let moradores = JSON.parse(localStorage.getItem("moradores")) || [];
 
-function mostrarMensagem(texto) {
-    mensagem.textContent = texto;
-    mensagem.classList.add("visivel");
+// TROCAR DE PÁGINA
 
-    clearTimeout(mostrarMensagem.temporizador);
-    mostrarMensagem.temporizador = setTimeout(() => {
-        mensagem.classList.remove("visivel");
-    }, 3500);
-}
+let botoes = document.querySelectorAll("[data-pagina]");
 
-async function requisicao(url, opcoes = {}) {
-    const resposta = await fetch(url, {
-        ...opcoes,
-        headers: {
-            "Content-Type": "application/json",
-            ...(opcoes.headers || {})
-        }
-    });
-
-    const dados = await resposta.json().catch(() => ({}));
-
-    if (!resposta.ok) {
-        throw new Error(dados.erro || "Não foi possível concluir a operação.");
-    }
-
-    return dados;
-}
-
-function escapar(valor = "") {
-    return String(valor).replace(/[&<>"']/g, caractere => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-    })[caractere]);
-}
-
-
-/* =====================================
-   2. NAVEGAÇÃO ENTRE PÁGINAS
-===================================== */
-
-document.querySelectorAll("nav button[data-pagina]").forEach(botao => {
-    botao.addEventListener("click", () => {
-        const destino = botao.dataset.pagina;
-
-        document.querySelectorAll(".pagina").forEach(pagina => {
-            pagina.classList.toggle("ativa", pagina.id === destino);
+botoes.forEach(function(botao) {
+    botao.addEventListener("click", function() {
+        document.querySelectorAll(".pagina").forEach(function(pagina) {
+            pagina.classList.remove("ativa");
         });
 
-        document.querySelectorAll("nav button").forEach(item => {
-            item.classList.toggle("ativo", item === botao);
+        document.getElementById(botao.dataset.pagina).classList.add("ativa");
+
+        botoes.forEach(function(b) {
+            b.classList.remove("ativo");
         });
+
+        botao.classList.add("ativo");
+
+        document.getElementById("tituloPagina").innerText =
+            botao.innerText.trim();
     });
 });
 
+// ATALHOS DO DASHBOARD
 
-/* =====================================
-   3. CONDOMÍNIOS
-===================================== */
+document.querySelectorAll("[data-ir]").forEach(function(botao) {
+    botao.addEventListener("click", function() {
+        let pagina = botao.dataset.ir;
 
-async function carregarCondominios() {
-    const condominios = await requisicao("api/condominios.php");
+        document.querySelectorAll(".pagina").forEach(function(p) {
+            p.classList.remove("ativa");
+        });
 
-    document.getElementById("totalCondominios").textContent = condominios.length;
+        document.getElementById(pagina).classList.add("ativa");
 
-    const lista = document.getElementById("listaCondominios");
-    if (!condominios.length) {
-        lista.textContent = "Nenhum condomínio cadastrado.";
-    } else {
-        lista.innerHTML = condominios.map(condominio => `
-            <div class="item-lista">
-                <div>
-                    <strong>${escapar(condominio.nome)}</strong>
-                    <p>${escapar(condominio.endereco)}${condominio.cidade ? " · " + escapar(condominio.cidade) : ""}</p>
-                </div>
-                <button class="excluir" data-excluir-condominio="${condominio.id}">Excluir</button>
-            </div>
-        `).join("");
-    }
+        botoes.forEach(function(b) {
+            b.classList.remove("ativo");
 
-    const select = document.getElementById("condominioUnidade");
-    const selecionado = select.value;
-    select.innerHTML = '<option value="">Selecione</option>' + condominios.map(condominio =>
-        `<option value="${condominio.id}">${escapar(condominio.nome)}</option>`
-    ).join("");
+            if (b.dataset.pagina == pagina) {
+                b.classList.add("ativo");
+            }
+        });
 
-    if (condominios.some(c => String(c.id) === selecionado)) select.value = selecionado;
-}
+        document.getElementById("tituloPagina").innerText =
+            document.querySelector('[data-pagina="' + pagina + '"]').innerText.trim();
+    });
+});
 
-document.getElementById("formCondominio").addEventListener("submit", async evento => {
+// MENU DO CELULAR
+
+document.getElementById("menuMobile").addEventListener("click", function() {
+    document.querySelector(".sidebar").classList.toggle("aberto");
+});
+
+// ABRIR CADASTRO DE CONDOMÍNIO
+
+document.getElementById("atalhoCondominio").addEventListener("click", function() {
+    document.querySelector('[data-ir="condominios"]').click();
+});
+
+// SALVAR CONDOMÍNIO
+
+document.getElementById("formCondominio").addEventListener("submit", function(evento) {
     evento.preventDefault();
 
-    const dados = {
-        nome: document.getElementById("nome").value.trim(),
-        cnpj: document.getElementById("cnpj").value.trim(),
-        telefone: document.getElementById("telefone").value.trim(),
-        endereco: document.getElementById("endereco").value.trim(),
-        bairro: document.getElementById("bairro").value.trim(),
-        cidade: document.getElementById("cidade").value.trim(),
-        estado: document.getElementById("estado").value.trim(),
+    let condominio = {
+        id: Date.now(),
+        nome: document.getElementById("nome").value,
+        cnpj: document.getElementById("cnpj").value,
+        telefone: document.getElementById("telefone").value,
+        endereco: document.getElementById("endereco").value,
+        bairro: document.getElementById("bairro").value,
+        cidade: document.getElementById("cidade").value,
+        estado: document.getElementById("estado").value,
         blocos: document.getElementById("blocos").value,
         quantidadeUnidades: document.getElementById("quantidadeUnidades").value,
-        sindico: document.getElementById("sindico").value.trim()
+        sindico: document.getElementById("sindico").value
     };
 
-    try {
-        const resultado = await requisicao("api/condominios.php", {
-            method: "POST",
-            body: JSON.stringify(dados)
-        });
-        evento.target.reset();
-        await atualizarTudo();
-        mostrarMensagem(resultado.mensagem);
-    } catch (erro) {
-        mostrarMensagem(erro.message);
-    }
+    condominios.push(condominio);
+
+    localStorage.setItem("condominios", JSON.stringify(condominios));
+
+    this.reset();
+
+    document.getElementById("blocos").value = 0;
+    document.getElementById("quantidadeUnidades").value = 0;
+
+    atualizar();
+    alert("Condomínio cadastrado!");
 });
 
+// SALVAR UNIDADE
 
-/* =====================================
-   4. UNIDADES
-===================================== */
-
-async function carregarUnidades() {
-    const unidades = await requisicao("api/unidades.php");
-    document.getElementById("totalUnidades").textContent = unidades.length;
-
-    const lista = document.getElementById("listaUnidades");
-    lista.innerHTML = unidades.length ? unidades.map(unidade => `
-        <div class="item-lista">
-            <div>
-                <strong>${escapar(unidade.tipo)} ${escapar(unidade.numero)}</strong>
-                <p>${escapar(unidade.nome_condominio)}${unidade.bloco ? " · Bloco " + escapar(unidade.bloco) : ""}${unidade.proprietario ? " · Proprietário: " + escapar(unidade.proprietario) : ""}</p>
-            </div>
-            <button class="excluir" data-excluir-unidade="${unidade.id}">Excluir</button>
-        </div>
-    `).join("") : "Nenhuma unidade cadastrada.";
-
-    const select = document.getElementById("unidadeMorador");
-    const selecionado = select.value;
-    select.innerHTML = '<option value="">Sem unidade vinculada</option>' + unidades.map(unidade =>
-        `<option value="${unidade.id}">${escapar(unidade.nome_condominio)} — ${escapar(unidade.numero)}${unidade.bloco ? " (Bloco " + escapar(unidade.bloco) + ")" : ""}</option>`
-    ).join("");
-
-    if (unidades.some(u => String(u.id) === selecionado)) select.value = selecionado;
-}
-
-document.getElementById("formUnidade").addEventListener("submit", async evento => {
+document.getElementById("formUnidade").addEventListener("submit", function(evento) {
     evento.preventDefault();
 
-    const dados = {
-        condominio_id: document.getElementById("condominioUnidade").value,
-        bloco: document.getElementById("blocoUnidade").value.trim(),
-        numero: document.getElementById("numeroUnidade").value.trim(),
+    let unidade = {
+        id: Date.now(),
+        condominioId: document.getElementById("condominioUnidade").value,
+        bloco: document.getElementById("blocoUnidade").value,
+        numero: document.getElementById("numeroUnidade").value,
         tipo: document.getElementById("tipoUnidade").value,
-        proprietario: document.getElementById("proprietario").value.trim()
+        proprietario: document.getElementById("proprietario").value
     };
 
-    try {
-        const resultado = await requisicao("api/unidades.php", {
-            method: "POST",
-            body: JSON.stringify(dados)
-        });
-        evento.target.reset();
-        await atualizarTudo();
-        mostrarMensagem(resultado.mensagem);
-    } catch (erro) {
-        mostrarMensagem(erro.message);
+    if (unidade.condominioId == "") {
+        alert("Cadastre um condomínio primeiro!");
+        return;
     }
+
+    unidades.push(unidade);
+
+    localStorage.setItem("unidades", JSON.stringify(unidades));
+
+    this.reset();
+
+    atualizar();
+    alert("Unidade cadastrada!");
 });
 
+// SALVAR MORADOR
 
-/* =====================================
-   5. MORADORES
-===================================== */
-
-async function carregarMoradores() {
-    const moradores = await requisicao("api/moradores.php");
-    document.getElementById("totalMoradores").textContent = moradores.length;
-
-    const lista = document.getElementById("listaMoradores");
-    lista.innerHTML = moradores.length ? moradores.map(morador => {
-        let unidade = "Sem unidade vinculada";
-        if (morador.numero_unidade) {
-            unidade = `${morador.nome_condominio} — Unidade ${morador.numero_unidade}`;
-            if (morador.bloco_unidade) unidade += `, bloco ${morador.bloco_unidade}`;
-        }
-
-        return `
-            <div class="item-lista">
-                <div>
-                    <strong>${escapar(morador.nome)}</strong>
-                    <p>${escapar(morador.perfil)} · ${escapar(unidade)}${morador.telefone ? " · " + escapar(morador.telefone) : ""}</p>
-                </div>
-                <button class="excluir" data-excluir-morador="${morador.id}">Excluir</button>
-            </div>
-        `;
-    }).join("") : "Nenhum morador cadastrado.";
-}
-
-document.getElementById("formMorador").addEventListener("submit", async evento => {
+document.getElementById("formMorador").addEventListener("submit", function(evento) {
     evento.preventDefault();
 
-    const dados = {
-        nome: document.getElementById("nomeMorador").value.trim(),
-        unidade_id: document.getElementById("unidadeMorador").value || null,
-        cpf: document.getElementById("cpfMorador").value.trim(),
-        telefone: document.getElementById("telefoneMorador").value.trim(),
+    let morador = {
+        id: Date.now(),
+        nome: document.getElementById("nomeMorador").value,
+        unidadeId: document.getElementById("unidadeMorador").value,
+        cpf: document.getElementById("cpfMorador").value,
+        telefone: document.getElementById("telefoneMorador").value,
         perfil: document.getElementById("perfilMorador").value
     };
 
-    try {
-        const resultado = await requisicao("api/moradores.php", {
-            method: "POST",
-            body: JSON.stringify(dados)
-        });
-        evento.target.reset();
-        await atualizarTudo();
-        mostrarMensagem(resultado.mensagem);
-    } catch (erro) {
-        mostrarMensagem(erro.message);
-    }
+    moradores.push(morador);
+
+    localStorage.setItem("moradores", JSON.stringify(moradores));
+
+    this.reset();
+
+    atualizar();
+    alert("Morador cadastrado!");
 });
 
+// ATUALIZAR O DASHBOARD
 
-/* =====================================
-   6. EXCLUSÃO DE REGISTROS
-===================================== */
+function atualizar() {
+    document.getElementById("totalCondominios").innerText = condominios.length;
+    document.getElementById("totalUnidades").innerText = unidades.length;
+    document.getElementById("totalMoradores").innerText = moradores.length;
 
-document.addEventListener("click", async evento => {
-    const botao = evento.target.closest("[data-excluir-condominio], [data-excluir-unidade], [data-excluir-morador]");
-    if (!botao) return;
+    // LISTA DE CONDOMÍNIOS NO DASHBOARD
 
-    let tipo;
-    let id;
+    let lista = document.getElementById("listaCondominios");
 
-    if (botao.dataset.excluirCondominio) {
-        tipo = "condominios";
-        id = botao.dataset.excluirCondominio;
-    } else if (botao.dataset.excluirUnidade) {
-        tipo = "unidades";
-        id = botao.dataset.excluirUnidade;
+    if (condominios.length == 0) {
+        lista.innerHTML = '<tr><td colspan="5">Nenhum condomínio cadastrado.</td></tr>';
     } else {
-        tipo = "moradores";
-        id = botao.dataset.excluirMorador;
-    }
+        lista.innerHTML = "";
 
-    const confirmar = window.confirm("Deseja realmente excluir este registro?");
-    if (!confirmar) return;
-
-    try {
-        const resultado = await requisicao(`api/${tipo}.php?id=${encodeURIComponent(id)}`, {
-            method: "DELETE"
+        condominios.forEach(function(c) {
+            lista.innerHTML += `
+                <tr>
+                    <td>${c.nome}</td>
+                    <td>${c.cidade}</td>
+                    <td>${c.blocos}</td>
+                    <td>${c.quantidadeUnidades}</td>
+                    <td>
+                        <button class="acao excluir" onclick="excluirCondominio(${c.id})">
+                            Excluir
+                        </button>
+                    </td>
+                </tr>
+            `;
         });
-        await atualizarTudo();
-        mostrarMensagem(resultado.mensagem);
-    } catch (erro) {
-        mostrarMensagem(erro.message);
     }
-});
 
+    // LISTA DE CONDOMÍNIOS NO CADASTRO
 
-/* =====================================
-   7. ATUALIZAÇÃO E INICIALIZAÇÃO
-===================================== */
+    let listaCondominios = document.getElementById("registrosCondominios");
+    listaCondominios.innerHTML = "";
 
-async function atualizarTudo() {
-    await carregarCondominios();
-    await carregarUnidades();
-    await carregarMoradores();
+    condominios.forEach(function(c) {
+        listaCondominios.innerHTML += `
+            <div class="registro">
+                <div class="registro-info">
+                    <strong>${c.nome}</strong>
+                    <small>${c.endereco} - ${c.cidade}</small>
+                </div>
+                <button class="acao excluir" onclick="excluirCondominio(${c.id})">
+                    Excluir
+                </button>
+            </div>
+        `;
+    });
+
+    // ATUALIZAR OPÇÕES DE CONDOMÍNIO
+
+    let opcaoCondominio = document.getElementById("condominioUnidade");
+
+    opcaoCondominio.innerHTML = '<option value="">Selecione um condomínio</option>';
+
+    condominios.forEach(function(c) {
+        opcaoCondominio.innerHTML += `
+            <option value="${c.id}">${c.nome}</option>
+        `;
+    });
+
+    // LISTA DE UNIDADES
+
+    let listaUnidades = document.getElementById("listaUnidades");
+    listaUnidades.innerHTML = "";
+
+    unidades.forEach(function(u) {
+        let condominio = condominios.find(function(c) {
+            return c.id == u.condominioId;
+        });
+
+        listaUnidades.innerHTML += `
+            <div class="registro">
+                <div class="registro-info">
+                    <strong>${u.tipo} ${u.numero}</strong>
+                    <small>Condomínio: ${condominio ? condominio.nome : "Não encontrado"}</small>
+                    <small>Bloco: ${u.bloco || "Não informado"}</small>
+                </div>
+                <button class="acao excluir" onclick="excluirUnidade(${u.id})">
+                    Excluir
+                </button>
+            </div>
+        `;
+    });
+
+    // ATUALIZAR OPÇÕES DE UNIDADE
+
+    let opcaoUnidade = document.getElementById("unidadeMorador");
+
+    opcaoUnidade.innerHTML = '<option value="">Sem unidade vinculada</option>';
+
+    unidades.forEach(function(u) {
+        opcaoUnidade.innerHTML += `
+            <option value="${u.id}">${u.tipo} ${u.numero}</option>
+        `;
+    });
+
+    // LISTA DE MORADORES
+
+    let listaMoradores = document.getElementById("listaMoradores");
+    listaMoradores.innerHTML = "";
+
+    moradores.forEach(function(m) {
+        listaMoradores.innerHTML += `
+            <div class="registro">
+                <div class="registro-info">
+                    <strong>${m.nome}</strong>
+                    <small>Perfil: ${m.perfil}</small>
+                    <small>Telefone: ${m.telefone || "Não informado"}</small>
+                </div>
+                <button class="acao excluir" onclick="excluirMorador(${m.id})">
+                    Excluir
+                </button>
+            </div>
+        `;
+    });
+
+    // ATUALIZAR CONTADORES
+
+    document.getElementById("contagemCondominios").innerText =
+        condominios.length + " registro(s)";
+
+    document.getElementById("contagemUnidades").innerText =
+        unidades.length + " registro(s)";
+
+    document.getElementById("contagemMoradores").innerText =
+        moradores.length + " registro(s)";
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    try {
-        await atualizarTudo();
-    } catch (erro) {
-        mostrarMensagem(erro.message);
-        console.error("Erro ao carregar dados:", erro);
+// EXCLUIR CONDOMÍNIO
+
+function excluirCondominio(id) {
+    let possuiUnidades = unidades.some(function(u) {
+        return u.condominioId == id;
+    });
+
+    if (possuiUnidades) {
+        alert("Exclua as unidades desse condomínio primeiro.");
+        return;
     }
-});
+
+    if (confirm("Deseja excluir este condomínio?")) {
+        condominios = condominios.filter(function(c) {
+            return c.id != id;
+        });
+
+        localStorage.setItem("condominios", JSON.stringify(condominios));
+        atualizar();
+    }
+}
+
+// EXCLUIR UNIDADE
+
+function excluirUnidade(id) {
+    let possuiMoradores = moradores.some(function(m) {
+        return m.unidadeId == id;
+    });
+
+    if (possuiMoradores) {
+        alert("Desvincule os moradores desta unidade primeiro.");
+        return;
+    }
+
+    if (confirm("Deseja excluir esta unidade?")) {
+        unidades = unidades.filter(function(u) {
+            return u.id != id;
+        });
+
+        localStorage.setItem("unidades", JSON.stringify(unidades));
+        atualizar();
+    }
+}
+
+// EXCLUIR MORADOR
+
+function excluirMorador(id) {
+    if (confirm("Deseja excluir este morador?")) {
+        moradores = moradores.filter(function(m) {
+            return m.id != id;
+        });
+
+        localStorage.setItem("moradores", JSON.stringify(moradores));
+        atualizar();
+    }
+}
+
+// DATA
+
+document.getElementById("dataAtual").innerText =
+    new Date().toLocaleDateString("pt-BR");
+
+// INICIAR O SISTEMA
+
+atualizar();
