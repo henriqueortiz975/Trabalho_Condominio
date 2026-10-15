@@ -1,52 +1,288 @@
-const $=id=>document.getElementById(id);
-let condominios=JSON.parse(localStorage.getItem("condominios")||"[]");
-let unidades=JSON.parse(localStorage.getItem("unidades")||"[]");
-let moradores=JSON.parse(localStorage.getItem("moradores")||"[]");
+/* =====================================
+   1. ELEMENTOS E MENSAGENS
+===================================== */
 
-const titles={inicio:"Visão geral",condominio:"Cadastro do condomínio",unidades:"Cadastro de unidades",moradores:"Cadastro de moradores"};
+const mensagem = document.getElementById("mensagem");
 
-function save(){localStorage.setItem("condominios",JSON.stringify(condominios));localStorage.setItem("unidades",JSON.stringify(unidades));localStorage.setItem("moradores",JSON.stringify(moradores));}
-function showSection(id){
- document.querySelectorAll(".section").forEach(s=>s.classList.toggle("active",s.id===id));
- document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.section===id));
- $("pageTitle").textContent=titles[id];
- if(id==="inicio")renderAll();
+function mostrarMensagem(texto) {
+    mensagem.textContent = texto;
+    mensagem.classList.add("visivel");
+
+    clearTimeout(mostrarMensagem.temporizador);
+    mostrarMensagem.temporizador = setTimeout(() => {
+        mensagem.classList.remove("visivel");
+    }, 3500);
 }
-document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>showSection(b.dataset.section)));
 
-function toast(msg){$("toast").textContent=msg;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),2500)}
-function esc(v){return String(v||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+async function requisicao(url, opcoes = {}) {
+    const resposta = await fetch(url, {
+        ...opcoes,
+        headers: {
+            "Content-Type": "application/json",
+            ...(opcoes.headers || {})
+        }
+    });
 
-$("condominioForm").addEventListener("submit",e=>{
- e.preventDefault();
- condominios.push({id:Date.now(),nome:$("nomeCondominio").value,cnpj:$("cnpj").value,telefone:$("telefone").value,endereco:$("endereco").value,bairro:$("bairro").value,cidade:$("cidade").value,estado:$("estado").value,blocos:$("blocos").value,unidades:$("unidades").value,sindico:$("sindico").value});
- save();e.target.reset();toast("Condomínio cadastrado com sucesso!");showSection("inicio");
+    const dados = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok) {
+        throw new Error(dados.erro || "Não foi possível concluir a operação.");
+    }
+
+    return dados;
+}
+
+function escapar(valor = "") {
+    return String(valor).replace(/[&<>"']/g, caractere => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[caractere]);
+}
+
+
+/* =====================================
+   2. NAVEGAÇÃO ENTRE PÁGINAS
+===================================== */
+
+document.querySelectorAll("nav button[data-pagina]").forEach(botao => {
+    botao.addEventListener("click", () => {
+        const destino = botao.dataset.pagina;
+
+        document.querySelectorAll(".pagina").forEach(pagina => {
+            pagina.classList.toggle("ativa", pagina.id === destino);
+        });
+
+        document.querySelectorAll("nav button").forEach(item => {
+            item.classList.toggle("ativo", item === botao);
+        });
+    });
 });
-$("unidadeForm").addEventListener("submit",e=>{
- e.preventDefault();unidades.push({id:Date.now(),bloco:$("blocoUnidade").value,numero:$("numeroUnidade").value,tipo:$("tipoUnidade").value,proprietario:$("proprietario").value});save();e.target.reset();renderUnidades();toast("Unidade adicionada!");
-});
-$("moradorForm").addEventListener("submit",e=>{
- e.preventDefault();moradores.push({id:Date.now(),nome:$("nomeMorador").value,cpf:$("cpfMorador").value,telefone:$("telMorador").value,unidade:$("unidadeMorador").value,perfil:$("perfilMorador").value});save();e.target.reset();renderMoradores();toast("Morador adicionado!");
+
+
+/* =====================================
+   3. CONDOMÍNIOS
+===================================== */
+
+async function carregarCondominios() {
+    const condominios = await requisicao("api/condominios.php");
+
+    document.getElementById("totalCondominios").textContent = condominios.length;
+
+    const lista = document.getElementById("listaCondominios");
+    if (!condominios.length) {
+        lista.textContent = "Nenhum condomínio cadastrado.";
+    } else {
+        lista.innerHTML = condominios.map(condominio => `
+            <div class="item-lista">
+                <div>
+                    <strong>${escapar(condominio.nome)}</strong>
+                    <p>${escapar(condominio.endereco)}${condominio.cidade ? " · " + escapar(condominio.cidade) : ""}</p>
+                </div>
+                <button class="excluir" data-excluir-condominio="${condominio.id}">Excluir</button>
+            </div>
+        `).join("");
+    }
+
+    const select = document.getElementById("condominioUnidade");
+    const selecionado = select.value;
+    select.innerHTML = '<option value="">Selecione</option>' + condominios.map(condominio =>
+        `<option value="${condominio.id}">${escapar(condominio.nome)}</option>`
+    ).join("");
+
+    if (condominios.some(c => String(c.id) === selecionado)) select.value = selecionado;
+}
+
+document.getElementById("formCondominio").addEventListener("submit", async evento => {
+    evento.preventDefault();
+
+    const dados = {
+        nome: document.getElementById("nome").value.trim(),
+        cnpj: document.getElementById("cnpj").value.trim(),
+        telefone: document.getElementById("telefone").value.trim(),
+        endereco: document.getElementById("endereco").value.trim(),
+        bairro: document.getElementById("bairro").value.trim(),
+        cidade: document.getElementById("cidade").value.trim(),
+        estado: document.getElementById("estado").value.trim(),
+        blocos: document.getElementById("blocos").value,
+        quantidadeUnidades: document.getElementById("quantidadeUnidades").value,
+        sindico: document.getElementById("sindico").value.trim()
+    };
+
+    try {
+        const resultado = await requisicao("api/condominios.php", {
+            method: "POST",
+            body: JSON.stringify(dados)
+        });
+        evento.target.reset();
+        await atualizarTudo();
+        mostrarMensagem(resultado.mensagem);
+    } catch (erro) {
+        mostrarMensagem(erro.message);
+    }
 });
 
-function renderCondominios(){
- if(!condominios.length){$("condominiosLista").innerHTML='<div class="empty">Nenhum condomínio cadastrado ainda.</div>';return}
- $("condominiosLista").innerHTML=condominios.map(c=>`<div style="padding:15px 0;border-bottom:1px solid #edf0f4;display:flex;justify-content:space-between;gap:15px"><div><strong>${esc(c.nome)}</strong><div style="font-size:12px;color:#7b8796;margin-top:4px">${esc(c.endereco)}${c.cidade?` · ${esc(c.cidade)}`:""}${c.estado?`/${esc(c.estado)}`:""}</div></div><button class="delete" onclick="removeCondominio(${c.id})">Excluir</button></div>`).join("");
+
+/* =====================================
+   4. UNIDADES
+===================================== */
+
+async function carregarUnidades() {
+    const unidades = await requisicao("api/unidades.php");
+    document.getElementById("totalUnidades").textContent = unidades.length;
+
+    const lista = document.getElementById("listaUnidades");
+    lista.innerHTML = unidades.length ? unidades.map(unidade => `
+        <div class="item-lista">
+            <div>
+                <strong>${escapar(unidade.tipo)} ${escapar(unidade.numero)}</strong>
+                <p>${escapar(unidade.nome_condominio)}${unidade.bloco ? " · Bloco " + escapar(unidade.bloco) : ""}${unidade.proprietario ? " · Proprietário: " + escapar(unidade.proprietario) : ""}</p>
+            </div>
+            <button class="excluir" data-excluir-unidade="${unidade.id}">Excluir</button>
+        </div>
+    `).join("") : "Nenhuma unidade cadastrada.";
+
+    const select = document.getElementById("unidadeMorador");
+    const selecionado = select.value;
+    select.innerHTML = '<option value="">Sem unidade vinculada</option>' + unidades.map(unidade =>
+        `<option value="${unidade.id}">${escapar(unidade.nome_condominio)} — ${escapar(unidade.numero)}${unidade.bloco ? " (Bloco " + escapar(unidade.bloco) + ")" : ""}</option>`
+    ).join("");
+
+    if (unidades.some(u => String(u.id) === selecionado)) select.value = selecionado;
 }
-function renderUnidades(){
- $("unidadesLista").innerHTML=unidades.length?`<table class="data-table"><thead><tr><th>Bloco</th><th>Número</th><th>Tipo</th><th>Proprietário</th><th></th></tr></thead><tbody>${unidades.map(u=>`<tr><td>${esc(u.bloco)||"—"}</td><td>${esc(u.numero)}</td><td>${esc(u.tipo)}</td><td>${esc(u.proprietario)||"—"}</td><td><button class="delete" onclick="removeUnidade(${u.id})">Excluir</button></td></tr>`).join("")}</tbody></table>`:'<div class="empty">Nenhuma unidade cadastrada.</div>';
+
+document.getElementById("formUnidade").addEventListener("submit", async evento => {
+    evento.preventDefault();
+
+    const dados = {
+        condominio_id: document.getElementById("condominioUnidade").value,
+        bloco: document.getElementById("blocoUnidade").value.trim(),
+        numero: document.getElementById("numeroUnidade").value.trim(),
+        tipo: document.getElementById("tipoUnidade").value,
+        proprietario: document.getElementById("proprietario").value.trim()
+    };
+
+    try {
+        const resultado = await requisicao("api/unidades.php", {
+            method: "POST",
+            body: JSON.stringify(dados)
+        });
+        evento.target.reset();
+        await atualizarTudo();
+        mostrarMensagem(resultado.mensagem);
+    } catch (erro) {
+        mostrarMensagem(erro.message);
+    }
+});
+
+
+/* =====================================
+   5. MORADORES
+===================================== */
+
+async function carregarMoradores() {
+    const moradores = await requisicao("api/moradores.php");
+    document.getElementById("totalMoradores").textContent = moradores.length;
+
+    const lista = document.getElementById("listaMoradores");
+    lista.innerHTML = moradores.length ? moradores.map(morador => {
+        let unidade = "Sem unidade vinculada";
+        if (morador.numero_unidade) {
+            unidade = `${morador.nome_condominio} — Unidade ${morador.numero_unidade}`;
+            if (morador.bloco_unidade) unidade += `, bloco ${morador.bloco_unidade}`;
+        }
+
+        return `
+            <div class="item-lista">
+                <div>
+                    <strong>${escapar(morador.nome)}</strong>
+                    <p>${escapar(morador.perfil)} · ${escapar(unidade)}${morador.telefone ? " · " + escapar(morador.telefone) : ""}</p>
+                </div>
+                <button class="excluir" data-excluir-morador="${morador.id}">Excluir</button>
+            </div>
+        `;
+    }).join("") : "Nenhum morador cadastrado.";
 }
-function renderMoradores(){
- $("moradoresLista").innerHTML=moradores.length?`<table class="data-table"><thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Unidade</th><th>Perfil</th><th></th></tr></thead><tbody>${moradores.map(m=>`<tr><td>${esc(m.nome)}</td><td>${esc(m.cpf)||"—"}</td><td>${esc(m.telefone)||"—"}</td><td>${esc(m.unidade)||"—"}</td><td>${esc(m.perfil)}</td><td><button class="delete" onclick="removeMorador(${m.id})">Excluir</button></td></tr>`).join("")}</tbody></table>`:'<div class="empty">Nenhum morador cadastrado.</div>';
+
+document.getElementById("formMorador").addEventListener("submit", async evento => {
+    evento.preventDefault();
+
+    const dados = {
+        nome: document.getElementById("nomeMorador").value.trim(),
+        unidade_id: document.getElementById("unidadeMorador").value || null,
+        cpf: document.getElementById("cpfMorador").value.trim(),
+        telefone: document.getElementById("telefoneMorador").value.trim(),
+        perfil: document.getElementById("perfilMorador").value
+    };
+
+    try {
+        const resultado = await requisicao("api/moradores.php", {
+            method: "POST",
+            body: JSON.stringify(dados)
+        });
+        evento.target.reset();
+        await atualizarTudo();
+        mostrarMensagem(resultado.mensagem);
+    } catch (erro) {
+        mostrarMensagem(erro.message);
+    }
+});
+
+
+/* =====================================
+   6. EXCLUSÃO DE REGISTROS
+===================================== */
+
+document.addEventListener("click", async evento => {
+    const botao = evento.target.closest("[data-excluir-condominio], [data-excluir-unidade], [data-excluir-morador]");
+    if (!botao) return;
+
+    let tipo;
+    let id;
+
+    if (botao.dataset.excluirCondominio) {
+        tipo = "condominios";
+        id = botao.dataset.excluirCondominio;
+    } else if (botao.dataset.excluirUnidade) {
+        tipo = "unidades";
+        id = botao.dataset.excluirUnidade;
+    } else {
+        tipo = "moradores";
+        id = botao.dataset.excluirMorador;
+    }
+
+    const confirmar = window.confirm("Deseja realmente excluir este registro?");
+    if (!confirmar) return;
+
+    try {
+        const resultado = await requisicao(`api/${tipo}.php?id=${encodeURIComponent(id)}`, {
+            method: "DELETE"
+        });
+        await atualizarTudo();
+        mostrarMensagem(resultado.mensagem);
+    } catch (erro) {
+        mostrarMensagem(erro.message);
+    }
+});
+
+
+/* =====================================
+   7. ATUALIZAÇÃO E INICIALIZAÇÃO
+===================================== */
+
+async function atualizarTudo() {
+    await carregarCondominios();
+    await carregarUnidades();
+    await carregarMoradores();
 }
-function removeCondominio(id){if(confirm("Excluir este condomínio?")){condominios=condominios.filter(x=>x.id!==id);save();renderAll()}}
-function removeUnidade(id){if(confirm("Excluir esta unidade?")){unidades=unidades.filter(x=>x.id!==id);save();renderUnidades();renderAll()}}
-function removeMorador(id){if(confirm("Excluir este morador?")){moradores=moradores.filter(x=>x.id!==id);save();renderMoradores();renderAll()}}
-function renderAll(){
- $("totalCondominios").textContent=condominios.length;
- $("totalUnidades").textContent=unidades.length;
- $("totalMoradores").textContent=moradores.length;
- renderCondominios();renderUnidades();renderMoradores();
-}
-$("currentDate").textContent=new Intl.DateTimeFormat("pt-BR",{dateStyle:"full"}).format(new Date());
-renderAll();
+
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        await atualizarTudo();
+    } catch (erro) {
+        mostrarMensagem(erro.message);
+        console.error("Erro ao carregar dados:", erro);
+    }
+});

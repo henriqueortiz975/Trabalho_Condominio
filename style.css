@@ -1,466 +1,190 @@
-* {
-    box-sizing: border-box;
-}
+/* 1. Configurações gerais */
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
-    font-family: Inter, Segoe UI, Arial, sans-serif;
-    background: #f4f7fb;
-    color: #182230;
+    font-family: Arial, sans-serif;
+    background: #f1f4f8;
+    color: #202b3c;
 }
 
-.app {
-    display: flex;
-    min-height: 100vh;
-}
+h2 { margin-top: 0; }
 
-
-
-.sidebar {
-    width: 250px;
-    background: #101827;
-    color: #fff;
-    padding: 25px 16px;
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    inset: 0 auto 0 0;
-}
-
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 10px 30px;
-}
-
-.brand strong {
-    display: block;
-    font-size: 16px;
-}
-
-.brand span {
-    display: block;
-    color: #8f9bad;
-    font-size: 11px;
-    margin-top: 3px;
-}
-
-.logo {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: #2f80ed;
-    display: grid;
-    place-items: center;
-    font-size: 21px;
-    font-weight: 800;
-}
-
-
-
-.nav-item {
-    width: 100%;
-    border: 0;
-    background: transparent;
-    color: #aeb9c9;
-    text-align: left;
-    padding: 13px 14px;
-    border-radius: 10px;
-    margin: 3px 0;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.nav-item span {
-    margin-left: 9px;
-}
-
-.nav-item:hover,
-.nav-item.active {
-    background: #1c2a3f;
-    color: #fff;
-}
-
-.nav-item.active {
-    box-shadow: inset 3px 0 #3f96ff;
-}
-
-
-
-.sidebar-footer {
-    margin-top: auto;
-    padding: 15px 10px;
-    color: #68758a;
-    font-size: 11px;
-    border-top: 1px solid #263244;
-}
-
-.sidebar-footer span {
-    display: block;
-    margin-top: 4px;
-}
-
-
-
-.content {
-    margin-left: 250px;
-    width: calc(100% - 250px);
-    padding: 35px 5%;
-    max-width: 1500px;
-}
-
-
-
-.topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 28px;
-}
-
-.eyebrow {
-    font-size: 10px;
-    letter-spacing: 1.8px;
-    color: #2f80ed;
-    font-weight: 800;
-    margin: 0 0 7px;
-}
-
-.topbar h1 {
-    margin: 0;
-    font-size: 28px;
-}
-
-.date {
-    color: #718096;
-    font-size: 13px;
-}
-
-
-.section {
-    display: none;
-}
-
-.section.active {
-    display: block;
-}
-
-
-
-.hero {
-    background: linear-grad ent(120deg, #10233d, #1c5b9d);
-    border-radius: 20px;
-    padding: 35px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    overflow: hidden;
-}
-
-.hero h2 {
-    font-size: 30px;
-    max-width: 600px;
-    margin: 12px 0;
-}
-
-.hero p {
-    color: #d9e7f7;
-    max-width: 600px;
-    line-height: 1.6;
-}
-
-.badge {
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    background: #ffffff1c;
-    padding: 7px 10px;
-    border-radius: 20px;
-}
-
-.hero-icon {
-    font-size: 100px;
-    opacity: 0.18;
-    margin-right: 45px;
-}
-
-
-
-.primary,
-.secondary {
-    border: 0;
-    border-radius: 9px;
-    padding: 12px 17px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.primary {
-    background: #2f80ed;
+/* 2. Cabeçalho */
+header {
+    padding: 24px 6%;
+    background: #17375e;
     color: white;
 }
 
-.primary:hover {
-    background: #1769d0;
+header h1 { margin: 0 0 6px; }
+header p { margin: 0; color: #d7e4f5; }
+
+/* 3. Navegação */
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 6%;
+    background: white;
+    border-bottom: 1px solid #dfe5ed;
 }
 
-.secondary {
-    background: #e9eef5;
-    color: #344054;
+nav button {
+    padding: 10px 15px;
+    border: 0;
+    border-radius: 6px;
+    background: #e8edf4;
+    color: #24364d;
+    cursor: pointer;
 }
 
+nav button:hover,
+nav button.ativo {
+    background: #2878d0;
+    color: white;
+}
 
+/* 4. Conteúdo e páginas */
+main {
+    width: min(1100px, 90%);
+    min-height: 65vh;
+    margin: 28px auto;
+}
 
-.cards {
+.pagina { display: none; }
+.pagina.ativa { display: block; }
+
+/* 5. Resumo */
+.resumo {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-    margin: 22px 0;
+    gap: 16px;
+    margin: 24px 0;
 }
 
-.stat-card,
-.panel {
+.resumo article,
+.lista,
+form {
+    padding: 18px;
     background: white;
-    border: 1px solid #e6ebf2;
-    border-radius: 15px;
-    padding: 21px;
-    box-shadow: 0 5px 18px #1b355008;
+    border: 1px solid #dfe5ed;
+    border-radius: 10px;
 }
 
-.stat-card span {
-    display: block;
-    color: #68778b;
-    font-size: 13px;
+.resumo h3 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    color: #5b687a;
 }
 
-.stat-card strong {
+.resumo strong {
     font-size: 30px;
-    display: block;
-    margin: 8px 0 2px;
+    color: #2878d0;
 }
 
-.stat-card small {
-    color: #98a3b2;
-}
-
-
-
-.panel {
-    margin-top: 22px;
-}
-
-.panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #edf0f4;
-    padding-bottom: 15px;
-}
-
-.panel-header h3 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.panel-header p {
-    color: #8490a0;
-    font-size: 12px; }
-
-.empty {
-    padding: 30px;
-    text-align: center;
-    color: #8b97a7;
-}
-
-
-
-.section-headi  {
-    margin-bottom: 20px;
-}
-
-.section-heading h2 {
-    margin: 0 0 6px;
-    font-size: 23px;
-}
-
-.section-heading p {
-    margin: 0;
-    color: #758195;
-}
-
-
-
-.form-grid {
-    background: white;
-    border: 1px solid #e6ebf2;
-    border-radius: 15px;
-    padding: 25px;
+/* 6. Formulários */
+form {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 18px;
-    box-shadow: 0 5px 18px #1b355008;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
 }
 
-.form-grid.compact {
-    grid-template-columns: repeat(2, 1fr);
-}
-
-.field {
+label {
     display: flex;
     flex-direction: column;
     gap: 7px;
+    font-size: 14px;
+    font-weight: bold;
 }
 
-.field label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #495568;
-}
-
-.field input,
-.field select {
-    border: 1px solid #d9e0e9;
-    border-radius: 9px;
-    padding: 12px;
-    background: #fbfcfe;
-    outline: none;
+input,
+select {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #cbd4e0;
+    border-radius: 6px;
+    background: white;
     font: inherit;
 }
 
-.field input:focus,
-.field select:focus {
-    border-color: #2f80ed;
-    box-shadow: 0 0 0 3px #2f80ed16;
+input:focus,
+select:focus {
+    outline: 2px solid #b7d8ff;
+    border-color: #2878d0;
 }
 
-.full {
+form button {
     grid-column: 1 / -1;
-}
-
-
-
-.actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 5px;
-}
-
-
-
-.table-wrap {
-    overflow-x: auto;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.data-table th,
-.data-table td {
-    text-align: left;
-    padding: 13px;
-    border-bottom: 1px solid #edf0f4;
-    font-size: 13px;
-}
-
-.data-table th {
-    color: #68778b;
-    font-size: 11px;
-    text-transform: uppercase;
-}
-
-
-
-.delete {
+    justify-self: end;
+    padding: 12px 18px;
     border: 0;
-    background: #fff0f0;
-    color: #d33b3b;
-    border-radius: 7px;
-    padding: 7px 9px;
+    border-radius: 6px;
+    background: #2878d0;
+    color: white;
+    font-weight: bold;
     cursor: pointer;
 }
 
+form button:hover { background: #1b5fa9; }
 
+/* 7. Listas */
+.lista {
+    margin: 12px 0 24px;
+    overflow-x: auto;
+}
 
-#toast {
+.item-lista {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid #e7ebf0;
+}
+
+.item-lista:last-child { border-bottom: 0; }
+.item-lista p { margin: 5px 0 0; color: #657287; font-size: 13px; }
+
+.excluir {
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 5px;
+    background: #ffeded;
+    color: #b42318;
+    cursor: pointer;
+}
+
+/* 8. Rodapé e mensagens */
+footer {
+    padding: 20px;
+    text-align: center;
+    color: #657287;
+    font-size: 13px;
+}
+
+#mensagem {
     position: fixed;
-    right: 25px;
-    bottom: 25px;
-    background: #152238;
-    color: white;
+    right: 20px;
+    bottom: 20px;
+    display: none;
+    max-width: calc(100% - 40px);
     padding: 13px 18px;
-    border-radius: 10px;
-    box-shadow: 0 8px 25px #0003;
-    transform: translateY(100px);
-    opacity: 0;
-    transition: 0.3s;
-    z-index: 20;
+    border-radius: 7px;
+    background: #17375e;
+    color: white;
+    box-shadow: 0 5px 20px #0002;
 }
 
-#toast.show {
-    transform: translateY(0);
-    opacity: 1;
-}
+#mensagem.visivel { display: block; }
 
-
-
-@media (max-width: 850px) {
-
-    .sidebar {
-        width: 70px;
-        padding: 20px 8px;
-    }
-
-    .brand div:not(.logo),
-    .nav-item span,
-    .sidebar-footer {
-        display: none;
-    }
-
-    .brand {
-        padding: 0 5px 25px;
-    }
-
-    .nav-item {
-        text-align: center;
-        padding: 13px 5px;
-    }
-
-    .content {
-        margin-left: 70px;
-        width: calc(100% - 70px);
-        padding: 25px 4%;
-    }
-
-    .hero-icon {
-        display: none;
-    }
-
-    .cards {
-        grid-template-columns: 1fr;
-    }
-
-    .form-grid,
-    .form-grid.compact {
-        grid-template-columns: 1fr;
-    }
-
-    .full {
-        grid-column: auto;
-    }
-
-    .actions.full {
-        grid-column: 1;
-    }
-
-    .topbar {
-        align-items: flex-start;
-        gap: 15px;
-    }
-
-    .date {
-        display: none;
-    }
+/* 9. Celulares */
+@media (max-width: 650px) {
+    header { padding: 20px 5%; }
+    nav { padding: 10px 5%; }
+    main { width: 90%; }
+    .resumo { grid-template-columns: 1fr; }
+    form { grid-template-columns: 1fr; padding: 14px; }
+    form button { grid-column: 1; justify-self: stretch; }
+    .item-lista { align-items: flex-start; }
 }
