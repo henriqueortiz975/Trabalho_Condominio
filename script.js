@@ -1,10 +1,48 @@
 
-let condominios = JSON.parse(localStorage.getItem("condominios")) || [];
-let unidades = JSON.parse(localStorage.getItem("unidades")) || [];
-let moradores = JSON.parse(localStorage.getItem("moradores")) || [];
+let condominios = [];
+let unidades = [];
+let moradores = [];
+
+// FUNÇÕES AUXILIARES
+async function requisicao(url, opcoes = {}) {
+    const resposta = await fetch(url, {
+        ...opcoes,
+        headers: {
+            "Content-Type": "application/json",
+            ...opcoes.headers
+        }
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+        throw new Error(dados.erro || "Ocorreu um erro.");
+    }
+
+    return dados;
+}
+
+function escapar(valor) {
+    return String(valor ?? "").replace(/[&<>"']/g, function(letra) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[letra];
+    });
+}
+
+function mostrarErro(erro) {
+    alert(erro.message || "Não foi possível concluir a operação.");
+}
+
+function obterElemento(id) {
+    return document.getElementById(id);
+}
 
 // TROCAR DE PÁGINA
-
 let botoes = document.querySelectorAll("[data-pagina]");
 
 botoes.forEach(function(botao) {
@@ -13,7 +51,11 @@ botoes.forEach(function(botao) {
             pagina.classList.remove("ativa");
         });
 
-        document.getElementById(botao.dataset.pagina).classList.add("ativa");
+        const pagina = obterElemento(botao.dataset.pagina);
+
+        if (pagina) {
+            pagina.classList.add("ativa");
+        }
 
         botoes.forEach(function(b) {
             b.classList.remove("ativo");
@@ -21,270 +63,304 @@ botoes.forEach(function(botao) {
 
         botao.classList.add("ativo");
 
-        document.getElementById("tituloPagina").innerText =
-            botao.innerText.trim();
+        if (obterElemento("tituloPagina")) {
+            obterElemento("tituloPagina").innerText = botao.innerText.trim();
+        }
+
+        if (document.querySelector(".sidebar")) {
+            document.querySelector(".sidebar").classList.remove("aberto");
+        }
     });
 });
 
 // ATALHOS DO DASHBOARD
-
 document.querySelectorAll("[data-ir]").forEach(function(botao) {
     botao.addEventListener("click", function() {
-        let pagina = botao.dataset.ir;
+        const pagina = botao.dataset.ir;
+        const botaoMenu = document.querySelector(
+            '[data-pagina="' + pagina + '"]'
+        );
 
-        document.querySelectorAll(".pagina").forEach(function(p) {
-            p.classList.remove("ativa");
-        });
-
-        document.getElementById(pagina).classList.add("ativa");
-
-        botoes.forEach(function(b) {
-            b.classList.remove("ativo");
-
-            if (b.dataset.pagina == pagina) {
-                b.classList.add("ativo");
-            }
-        });
-
-        document.getElementById("tituloPagina").innerText =
-            document.querySelector('[data-pagina="' + pagina + '"]').innerText.trim();
+        if (botaoMenu) {
+            botaoMenu.click();
+        }
     });
 });
 
 // MENU DO CELULAR
-
-document.getElementById("menuMobile").addEventListener("click", function() {
-    document.querySelector(".sidebar").classList.toggle("aberto");
-});
+if (obterElemento("menuMobile")) {
+    obterElemento("menuMobile").addEventListener("click", function() {
+        document.querySelector(".sidebar")?.classList.toggle("aberto");
+    });
+}
 
 // ABRIR CADASTRO DE CONDOMÍNIO
-
-document.getElementById("atalhoCondominio").addEventListener("click", function() {
-    document.querySelector('[data-ir="condominios"]').click();
-});
+if (obterElemento("atalhoCondominio")) {
+    obterElemento("atalhoCondominio").addEventListener("click", function() {
+        document.querySelector('[data-ir="condominios"]')?.click();
+    });
+}
 
 // SALVAR CONDOMÍNIO
-
-document.getElementById("formCondominio").addEventListener("submit", function(evento) {
+obterElemento("formCondominio").addEventListener("submit", async function(evento) {
     evento.preventDefault();
 
-    let condominio = {
-        id: Date.now(),
-        nome: document.getElementById("nome").value,
-        cnpj: document.getElementById("cnpj").value,
-        telefone: document.getElementById("telefone").value,
-        endereco: document.getElementById("endereco").value,
-        bairro: document.getElementById("bairro").value,
-        cidade: document.getElementById("cidade").value,
-        estado: document.getElementById("estado").value,
-        blocos: document.getElementById("blocos").value,
-        quantidadeUnidades: document.getElementById("quantidadeUnidades").value,
-        sindico: document.getElementById("sindico").value
+    const condominio = {
+        nome: obterElemento("nome").value.trim(),
+        cnpj: obterElemento("cnpj").value.trim(),
+        telefone: obterElemento("telefone").value.trim(),
+        endereco: obterElemento("endereco").value.trim(),
+        bairro: obterElemento("bairro").value.trim(),
+        cidade: obterElemento("cidade").value.trim(),
+        estado: obterElemento("estado").value.trim(),
+        blocos: obterElemento("blocos").value,
+        quantidadeUnidades: obterElemento("quantidadeUnidades").value,
+        sindico: obterElemento("sindico").value.trim()
     };
 
-    condominios.push(condominio);
+    try {
+        await requisicao("/api/condominios", {
+            method: "POST",
+            body: JSON.stringify(condominio)
+        });
 
-    localStorage.setItem("condominios", JSON.stringify(condominios));
+        this.reset();
 
-    this.reset();
+        obterElemento("blocos").value = 0;
+        obterElemento("quantidadeUnidades").value = 0;
 
-    document.getElementById("blocos").value = 0;
-    document.getElementById("quantidadeUnidades").value = 0;
-
-    atualizar();
-    alert("Condomínio cadastrado!");
+        await atualizar();
+        alert("Condomínio cadastrado!");
+    } catch (erro) {
+        mostrarErro(erro);
+    }
 });
 
 // SALVAR UNIDADE
-
-document.getElementById("formUnidade").addEventListener("submit", function(evento) {
+obterElemento("formUnidade").addEventListener("submit", async function(evento) {
     evento.preventDefault();
 
-    let unidade = {
-        id: Date.now(),
-        condominioId: document.getElementById("condominioUnidade").value,
-        bloco: document.getElementById("blocoUnidade").value,
-        numero: document.getElementById("numeroUnidade").value,
-        tipo: document.getElementById("tipoUnidade").value,
-        proprietario: document.getElementById("proprietario").value
+    const unidade = {
+        condominioId: obterElemento("condominioUnidade").value,
+        bloco: obterElemento("blocoUnidade").value.trim(),
+        numero: obterElemento("numeroUnidade").value.trim(),
+        tipo: obterElemento("tipoUnidade").value,
+        proprietario: obterElemento("proprietario").value.trim()
     };
 
-    if (unidade.condominioId == "") {
-        alert("Cadastre um condomínio primeiro!");
+    if (!unidade.condominioId) {
+        alert("Cadastre e selecione um condomínio primeiro!");
         return;
     }
 
-    unidades.push(unidade);
+    try {
+        await requisicao("/api/unidades", {
+            method: "POST",
+            body: JSON.stringify(unidade)
+        });
 
-    localStorage.setItem("unidades", JSON.stringify(unidades));
-
-    this.reset();
-
-    atualizar();
-    alert("Unidade cadastrada!");
+        this.reset();
+        await atualizar();
+        alert("Unidade cadastrada!");
+    } catch (erro) {
+        mostrarErro(erro);
+    }
 });
 
 // SALVAR MORADOR
-
-document.getElementById("formMorador").addEventListener("submit", function(evento) {
+obterElemento("formMorador").addEventListener("submit", async function(evento) {
     evento.preventDefault();
 
-    let morador = {
-        id: Date.now(),
-        nome: document.getElementById("nomeMorador").value,
-        unidadeId: document.getElementById("unidadeMorador").value,
-        cpf: document.getElementById("cpfMorador").value,
-        telefone: document.getElementById("telefoneMorador").value,
-        perfil: document.getElementById("perfilMorador").value
+    const morador = {
+        nome: obterElemento("nomeMorador").value.trim(),
+        unidadeId: obterElemento("unidadeMorador").value || null,
+        cpf: obterElemento("cpfMorador").value.trim(),
+        telefone: obterElemento("telefoneMorador").value.trim(),
+        perfil: obterElemento("perfilMorador").value
     };
 
-    moradores.push(morador);
+    try {
+        await requisicao("/api/moradores", {
+            method: "POST",
+            body: JSON.stringify(morador)
+        });
 
-    localStorage.setItem("moradores", JSON.stringify(moradores));
-
-    this.reset();
-
-    atualizar();
-    alert("Morador cadastrado!");
+        this.reset();
+        await atualizar();
+        alert("Morador cadastrado!");
+    } catch (erro) {
+        mostrarErro(erro);
+    }
 });
 
-// ATUALIZAR O DASHBOARD
+// ATUALIZAR O DASHBOARD E AS LISTAS
+async function atualizar() {
+    try {
+        const resultados = await Promise.all([
+            requisicao("/api/condominios"),
+            requisicao("/api/unidades"),
+            requisicao("/api/moradores")
+        ]);
 
-function atualizar() {
-    document.getElementById("totalCondominios").innerText = condominios.length;
-    document.getElementById("totalUnidades").innerText = unidades.length;
-    document.getElementById("totalMoradores").innerText = moradores.length;
+        // Converter os nomes das colunas do MySQL para os usados no HTML.
+
+        condominios = resultados[0].map(function(c) {
+            return {
+                ...c,
+                quantidadeUnidades: c.quantidadeUnidades ?? c.quantidade_unidades ?? 0
+            };
+        });
+
+        unidades = resultados[1].map(function(u) {
+            return {
+                ...u,
+                condominioId: u.condominio_id
+            };
+        });
+
+        moradores = resultados[2].map(function(m) {
+            return {
+                ...m,
+                unidadeId: m.unidade_id
+            };
+        });
+
+        renderizar();
+    } catch (erro) {
+        console.error("Erro ao carregar os dados:", erro);
+        alert("Não foi possível carregar os dados. Verifique o MySQL e o servidor Node.js.");
+    }
+}
+
+function renderizar() {
+    // CONTADORES DO DASHBOARD
+    obterElemento("totalCondominios").innerText = condominios.length;
+    obterElemento("totalUnidades").innerText = unidades.length;
+    obterElemento("totalMoradores").innerText = moradores.length;
 
     // LISTA DE CONDOMÍNIOS NO DASHBOARD
+    const lista = obterElemento("listaCondominios");
 
-    let lista = document.getElementById("listaCondominios");
-
-    if (condominios.length == 0) {
+    if (condominios.length === 0) {
         lista.innerHTML = '<tr><td colspan="5">Nenhum condomínio cadastrado.</td></tr>';
     } else {
-        lista.innerHTML = "";
-
-        condominios.forEach(function(c) {
-            lista.innerHTML += `
+        lista.innerHTML = condominios.map(function(c) {
+            return `
                 <tr>
-                    <td>${c.nome}</td>
-                    <td>${c.cidade}</td>
-                    <td>${c.blocos}</td>
-                    <td>${c.quantidadeUnidades}</td>
+                    <td>${escapar(c.nome)}</td>
+                    <td>${escapar(c.cidade)}</td>
+                    <td>${escapar(c.blocos)}</td>
+                    <td>${escapar(c.quantidadeUnidades)}</td>
                     <td>
-                        <button class="acao excluir" onclick="excluirCondominio(${c.id})">
+                        <button class="acao excluir"
+                            onclick="excluirCondominio(${Number(c.id)})">
                             Excluir
                         </button>
                     </td>
                 </tr>
             `;
-        });
+        }).join("");
     }
 
     // LISTA DE CONDOMÍNIOS NO CADASTRO
+    const listaCondominios = obterElemento("registrosCondominios");
 
-    let listaCondominios = document.getElementById("registrosCondominios");
-    listaCondominios.innerHTML = "";
-
-    condominios.forEach(function(c) {
-        listaCondominios.innerHTML += `
+    listaCondominios.innerHTML = condominios.map(function(c) {
+        return `
             <div class="registro">
                 <div class="registro-info">
-                    <strong>${c.nome}</strong>
-                    <small>${c.endereco} - ${c.cidade}</small>
+                    <strong>${escapar(c.nome)}</strong>
+                    <small>${escapar(c.endereco)} - ${escapar(c.cidade)}</small>
                 </div>
-                <button class="acao excluir" onclick="excluirCondominio(${c.id})">
+                <button class="acao excluir"
+                    onclick="excluirCondominio(${Number(c.id)})">
                     Excluir
                 </button>
             </div>
         `;
-    });
+    }).join("");
 
-    // ATUALIZAR OPÇÕES DE CONDOMÍNIO
+    // OPÇÕES DE CONDOMÍNIO
+    const opcaoCondominio = obterElemento("condominioUnidade");
 
-    let opcaoCondominio = document.getElementById("condominioUnidade");
-
-    opcaoCondominio.innerHTML = '<option value="">Selecione um condomínio</option>';
-
-    condominios.forEach(function(c) {
-        opcaoCondominio.innerHTML += `
-            <option value="${c.id}">${c.nome}</option>
-        `;
-    });
+    opcaoCondominio.innerHTML =
+        '<option value="">Selecione um condomínio</option>' +
+        condominios.map(function(c) {
+            return `<option value="${Number(c.id)}">${escapar(c.nome)}</option>`;
+        }).join("");
 
     // LISTA DE UNIDADES
+    const listaUnidades = obterElemento("listaUnidades");
 
-    let listaUnidades = document.getElementById("listaUnidades");
-    listaUnidades.innerHTML = "";
-
-    unidades.forEach(function(u) {
-        let condominio = condominios.find(function(c) {
-            return c.id == u.condominioId;
+    listaUnidades.innerHTML = unidades.map(function(u) {
+        const condominio = condominios.find(function(c) {
+            return Number(c.id) === Number(u.condominioId);
         });
 
-        listaUnidades.innerHTML += `
+        return `
             <div class="registro">
                 <div class="registro-info">
-                    <strong>${u.tipo} ${u.numero}</strong>
-                    <small>Condomínio: ${condominio ? condominio.nome : "Não encontrado"}</small>
-                    <small>Bloco: ${u.bloco || "Não informado"}</small>
+                    <strong>${escapar(u.tipo)} ${escapar(u.numero)}</strong>
+                    <small>Condomínio: ${escapar(condominio ? condominio.nome : "Não encontrado")}</small>
+                    <small>Bloco: ${escapar(u.bloco || "Não informado")}</small>
+                    <small>Proprietário: ${escapar(u.proprietario || "Não informado")}</small>
                 </div>
-                <button class="acao excluir" onclick="excluirUnidade(${u.id})">
+                <button class="acao excluir"
+                    onclick="excluirUnidade(${Number(u.id)})">
                     Excluir
                 </button>
             </div>
         `;
-    });
+    }).join("");
 
-    // ATUALIZAR OPÇÕES DE UNIDADE
+    // OPÇÕES DE UNIDADE
+    const opcaoUnidade = obterElemento("unidadeMorador");
 
-    let opcaoUnidade = document.getElementById("unidadeMorador");
-
-    opcaoUnidade.innerHTML = '<option value="">Sem unidade vinculada</option>';
-
-    unidades.forEach(function(u) {
-        opcaoUnidade.innerHTML += `
-            <option value="${u.id}">${u.tipo} ${u.numero}</option>
-        `;
-    });
+    opcaoUnidade.innerHTML =
+        '<option value="">Sem unidade vinculada</option>' +
+        unidades.map(function(u) {
+            return `<option value="${Number(u.id)}">${escapar(u.tipo)} ${escapar(u.numero)}</option>`;
+        }).join("");
 
     // LISTA DE MORADORES
+    const listaMoradores = obterElemento("listaMoradores");
 
-    let listaMoradores = document.getElementById("listaMoradores");
-    listaMoradores.innerHTML = "";
+    listaMoradores.innerHTML = moradores.map(function(m) {
+        const unidade = unidades.find(function(u) {
+            return Number(u.id) === Number(m.unidadeId);
+        });
 
-    moradores.forEach(function(m) {
-        listaMoradores.innerHTML += `
+        return `
             <div class="registro">
                 <div class="registro-info">
-                    <strong>${m.nome}</strong>
-                    <small>Perfil: ${m.perfil}</small>
-                    <small>Telefone: ${m.telefone || "Não informado"}</small>
+                    <strong>${escapar(m.nome)}</strong>
+                    <small>Perfil: ${escapar(m.perfil)}</small>
+                    <small>Telefone: ${escapar(m.telefone || "Não informado")}</small>
+                    <small>Unidade: ${escapar(unidade ? unidade.tipo + " " + unidade.numero : "Sem unidade")}</small>
                 </div>
-                <button class="acao excluir" onclick="excluirMorador(${m.id})">
+                <button class="acao excluir"
+                    onclick="excluirMorador(${Number(m.id)})">
                     Excluir
                 </button>
             </div>
         `;
-    });
+    }).join("");
 
-    // ATUALIZAR CONTADORES
-
-    document.getElementById("contagemCondominios").innerText =
+    // CONTADORES DAS LISTAS
+    obterElemento("contagemCondominios").innerText =
         condominios.length + " registro(s)";
 
-    document.getElementById("contagemUnidades").innerText =
+    obterElemento("contagemUnidades").innerText =
         unidades.length + " registro(s)";
 
-    document.getElementById("contagemMoradores").innerText =
+    obterElemento("contagemMoradores").innerText =
         moradores.length + " registro(s)";
 }
 
 // EXCLUIR CONDOMÍNIO
-
-function excluirCondominio(id) {
-    let possuiUnidades = unidades.some(function(u) {
-        return u.condominioId == id;
+async function excluirCondominio(id) {
+    const possuiUnidades = unidades.some(function(u) {
+        return Number(u.condominioId) === Number(id);
     });
 
     if (possuiUnidades) {
@@ -292,21 +368,26 @@ function excluirCondominio(id) {
         return;
     }
 
-    if (confirm("Deseja excluir este condomínio?")) {
-        condominios = condominios.filter(function(c) {
-            return c.id != id;
+    if (!confirm("Deseja excluir este condomínio?")) {
+        return;
+    }
+
+    try {
+        await requisicao("/api/condominios/" + id, {
+            method: "DELETE"
         });
 
-        localStorage.setItem("condominios", JSON.stringify(condominios));
-        atualizar();
+        await atualizar();
+        alert("Condomínio excluído!");
+    } catch (erro) {
+        mostrarErro(erro);
     }
 }
 
 // EXCLUIR UNIDADE
-
-function excluirUnidade(id) {
-    let possuiMoradores = moradores.some(function(m) {
-        return m.unidadeId == id;
+async function excluirUnidade(id) {
+    const possuiMoradores = moradores.some(function(m) {
+        return Number(m.unidadeId) === Number(id);
     });
 
     if (possuiMoradores) {
@@ -314,34 +395,45 @@ function excluirUnidade(id) {
         return;
     }
 
-    if (confirm("Deseja excluir esta unidade?")) {
-        unidades = unidades.filter(function(u) {
-            return u.id != id;
+    if (!confirm("Deseja excluir esta unidade?")) {
+        return;
+    }
+
+    try {
+        await requisicao("/api/unidades/" + id, {
+            method: "DELETE"
         });
 
-        localStorage.setItem("unidades", JSON.stringify(unidades));
-        atualizar();
+        await atualizar();
+        alert("Unidade excluída!");
+    } catch (erro) {
+        mostrarErro(erro);
     }
 }
 
 // EXCLUIR MORADOR
+async function excluirMorador(id) {
+    if (!confirm("Deseja excluir este morador?")) {
+        return;
+    }
 
-function excluirMorador(id) {
-    if (confirm("Deseja excluir este morador?")) {
-        moradores = moradores.filter(function(m) {
-            return m.id != id;
+    try {
+        await requisicao("/api/moradores/" + id, {
+            method: "DELETE"
         });
 
-        localStorage.setItem("moradores", JSON.stringify(moradores));
-        atualizar();
+        await atualizar();
+        alert("Morador excluído!");
+    } catch (erro) {
+        mostrarErro(erro);
     }
 }
 
 // DATA
-
-document.getElementById("dataAtual").innerText =
-    new Date().toLocaleDateString("pt-BR");
+if (obterElemento("dataAtual")) {
+    obterElemento("dataAtual").innerText =
+        new Date().toLocaleDateString("pt-BR");
+}
 
 // INICIAR O SISTEMA
-
 atualizar();
